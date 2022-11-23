@@ -80,7 +80,7 @@ if __name__ == '__main__':
         db.session.commit()
 
         import hashlib
-        password = str(hashlib.md5('123456'.encode('utf-8')).digest())
+        password = str(hashlib.md5('123456'.encode('utf-8')).hexdigest())
         u = User(name='thanh', username='admin', password=password,
                  user_role=UserRole.ADMIN,
                  avatar='https://res.cloudinary.com/dxxwcby8l/image/upload/v1647248722/r8sjly3st7estapvj19u.jpg')

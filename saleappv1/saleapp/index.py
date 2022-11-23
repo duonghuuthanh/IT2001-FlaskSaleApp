@@ -1,5 +1,5 @@
-from flask import render_template, request, redirect
-from saleapp import dao, app, login, admin
+from flask import render_template, request, redirect, session, jsonify
+from saleapp import dao, app, login, admin, utils
 from flask_login import login_user, logout_user, current_user
 from saleapp.decorators import annonymous_user
 import cloudinary.uploader
@@ -38,14 +38,11 @@ def register():
         password = request.form['password']
         confirm = request.form['confirm']
         if password.__eq__(confirm):
-            # upload
             avatar = ''
-
             if request.files:
                 res = cloudinary.uploader.upload(request.files['avatar'])
                 avatar = res['secure_url']
 
-            # save user
             try:
                 dao.register(name=request.form['name'],
                              username=request.form['username'],
@@ -68,7 +65,8 @@ def login_my_user():
         user = dao.auth_user(username=username, password=password)
         if user:
             login_user(user=user)
-            return redirect('/')
+            n = request.args.get('next')
+            return redirect(n if n else '/')
 
     return render_template('login.html')
 
@@ -79,11 +77,55 @@ def logout_my_user():
     return redirect('/login')
 
 
+@app.route('/cart')
+def cart():
+    # session['cart'] = {
+    #     "1": {
+    #         "id": "1",
+    #         "name": "iPhone 13",
+    #         "price": 12000,
+    #         "quantity": 2
+    #     }, "2": {
+    #         "id": "2",
+    #         "name": "iPhone 14",
+    #         "price": 15000,
+    #         "quantity": 5
+    #     }
+    # }
+    return render_template('cart.html')
+
+
+@app.route('/api/cart', methods=['post'])
+def add_to_cart():
+    data = request.json
+    id = str(data['id'])
+
+    key = app.config['CART_KEY'] # 'cart'
+    cart = session[key] if key in session else {}
+    if id in cart:
+        cart[id]['quantity'] += 1
+    else:
+        name = data['name']
+        price = data['price']
+
+        cart[id] = {
+            "id": id,
+            "name": name,
+            "price": price,
+            "quantity": 1
+        }
+
+    session[key] = cart
+
+    return jsonify(utils.cart_stats(cart=cart))
+
+
 @app.context_processor
 def common_attr():
     categories = dao.load_categories()
     return {
-        'categories': categories
+        'categories': categories,
+        'cart': utils.cart_stats(session.get(app.config['CART_KEY']))
     }
 
 
