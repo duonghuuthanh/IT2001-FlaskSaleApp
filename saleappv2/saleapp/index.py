@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, session, jsonify
 from saleapp import app, dao, admin, login, utils
-from flask_login import login_user, logout_user
+from flask_login import login_user, logout_user, login_required
 from saleapp.decorators import annonymous_user
 import cloudinary.uploader
 
@@ -126,6 +126,50 @@ def add_to_cart():
     session[key] = cart
 
     return jsonify(utils.cart_stats(cart))
+
+
+@app.route('/api/cart/<product_id>', methods=['put'])
+def update_cart(product_id):
+    key = app.config['CART_KEY']
+    cart = session.get(key)
+
+    if cart and product_id in cart:
+        cart[product_id]['quantity'] = int(request.json['quantity'])
+
+    session[key] = cart
+
+    return jsonify(utils.cart_stats(cart))
+
+
+@app.route('/api/cart/<product_id>', methods=['delete'])
+def delete_cart(product_id):
+    key = app.config['CART_KEY']
+    cart = session.get(key)
+
+    if cart and product_id in cart:
+        del cart[product_id]
+
+    session[key] = cart
+
+    return jsonify(utils.cart_stats(cart))
+
+
+@app.route('/api/pay')
+@login_required
+def pay():
+    key = app.config['CART_KEY']
+    cart = session.get(key)
+
+    if cart:
+        try:
+            dao.save_receipt(cart=cart)
+        except Exception as ex:
+            print(str(ex))
+            return jsonify({"status": 500})
+        else:
+            del session[key]
+
+    return jsonify({"status": 200})
 
 
 @app.context_processor

@@ -1,4 +1,4 @@
-from saleapp.models import Category, Product
+from saleapp.models import Category, Product, Tag
 from saleapp import db, app
 from flask_admin import Admin, BaseView, expose
 from flask_admin.contrib.sqla import ModelView
@@ -45,8 +45,8 @@ class StatsView(BaseView):
         return self.render('admin/stats.html')
 
 
-
 admin = Admin(app=app, name='Quản trị bán hàng', template_mode='bootstrap4')
 admin.add_view(ModelView(Category, db.session, name='Danh mục'))
+admin.add_view(ModelView(Tag, db.session, name='Tag'))
 admin.add_view(ProductView(Product, db.session, name='Sản phẩm'))
 admin.add_view(StatsView(name='Thông kê'))
