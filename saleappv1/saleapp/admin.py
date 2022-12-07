@@ -1,10 +1,11 @@
 from saleapp.models import Category, Product, Tag
-from saleapp import db, app
-from flask_admin import Admin, BaseView, expose
+from saleapp import db, app, dao
+from flask_admin import Admin, BaseView, expose, AdminIndexView
 from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user
 from wtforms import TextAreaField
 from wtforms.widgets import TextArea
+from flask import request
 
 
 class CKTextAreaWidget(TextArea):
@@ -42,10 +43,20 @@ class ProductView(ModelView):
 class StatsView(BaseView):
     @expose('/')
     def index(self):
-        return self.render('admin/stats.html')
+        stats = dao.stats_revenue(kw=request.args.get('kw'),
+                                  from_date=request.args.get('from_date'),
+                                  to_date=request.args.get('to_date'))
+        return self.render('admin/stats.html', stats=stats)
 
 
-admin = Admin(app=app, name='Quản trị bán hàng', template_mode='bootstrap4')
+class MyAdminView(AdminIndexView):
+    @expose('/')
+    def index(self):
+        stats = dao.count_product_by_cate()
+        return self.render('admin/index.html', stats=stats)
+
+
+admin = Admin(app=app, name='Quản trị bán hàng', template_mode='bootstrap4', index_view=MyAdminView())
 admin.add_view(ModelView(Category, db.session, name='Danh mục'))
 admin.add_view(ModelView(Tag, db.session, name='Tag'))
 admin.add_view(ProductView(Product, db.session, name='Sản phẩm'))
