@@ -42,6 +42,7 @@ class Product(BaseModel):
     receipt_details = relationship('ReceiptDetails', backref='product', lazy=True)
     tags = relationship('Tag', secondary='prod_tag', lazy='subquery',
                         backref=backref('products', lazy=True))
+    comments = relationship('Comment', backref='product', lazy=True)
 
     def __str__(self):
         return self.name
@@ -62,6 +63,7 @@ class User(BaseModel, UserMixin):
     active = Column(Boolean, default=True)
     user_role = Column(Enum(UserRole), default=UserRole.USER)
     receipts = relationship('Receipt', backref='user', lazy=True)
+    comments = relationship('Comment', backref='user', lazy=True)
 
     def __str__(self):
         return self.name
@@ -78,6 +80,13 @@ class ReceiptDetails(BaseModel):
     price = Column(Float, default=0)
     product_id = Column(Integer, ForeignKey(Product.id), nullable=False)
     receipt_id = Column(Integer, ForeignKey(Receipt.id), nullable=False)
+
+
+class Comment(BaseModel):
+    content = Column(String(255), nullable=False)
+    created_date = Column(DateTime, default=datetime.now())
+    user_id = Column(Integer, ForeignKey(User.id), nullable=False)
+    product_id = Column(Integer, ForeignKey(Product.id), nullable=False)
 
 
 if __name__ == '__main__':
@@ -115,4 +124,9 @@ if __name__ == '__main__':
                  user_role=UserRole.ADMIN,
                  avatar='https://res.cloudinary.com/dxxwcby8l/image/upload/v1647248722/r8sjly3st7estapvj19u.jpg')
         db.session.add(u)
+        db.session.commit()
+
+        c1 = Comment(content='Good', user_id=1, product_id=1)
+        c2 = Comment(content='Nice', user_id=1, product_id=1)
+        db.session.add_all([c1, c2])
         db.session.commit()
